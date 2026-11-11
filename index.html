@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>고등학교 수학 함수 그래프 탐구 도구</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        .font-mono-math {
+            font-family: 'Fira Code', monospace;
+        }
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden bg-slate-950 text-slate-100">
+
+    <!-- 상단 헤더 (전자칠판 및 모바일 공용) -->
+    <header class="h-14 border-b border-slate-800 bg-slate-900 px-4 flex items-center justify-between z-20 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="h-9 w-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-yellow-400 font-bold">
+                <i class="fa-solid fa-chart-line text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-sm sm:text-base leading-none text-slate-100">함수 그래프 탐구 도구</h1>
+                <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">고등학교 수학 - 함수 변화와 성질 탐구</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button id="btn-reset-view" title="화면 위치 원점으로 초기화" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium transition flex items-center gap-1.5 border border-slate-700">
+                <i class="fa-solid fa-arrows-to-dot"></i>
+                <span class="hidden sm:inline">원점 맞추기</span>
+            </button>
+            <button id="btn-toggle-panel" class="lg:hidden px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-sliders"></i>
+                <span>설정</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 레이아웃 -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- 좌측/중앙: Canvas 그래프 영역 -->
+        <main class="flex-1 bg-slate-950 flex flex-col relative overflow-hidden">
+            
+            <!-- 상단 수식 렌더링 카드 (전자칠판 가독성 극대화) -->
+            <div class="absolute top-4 left-4 z-10 bg-slate-900/90 backdrop-blur-md border border-slate-800 px-4 py-3 rounded-2xl shadow-xl flex flex-col gap-1 max-w-[90vw] sm:max-w-md">
+                <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">현재 탐구 중인 함수</span>
+                <div id="rendered-formula" class="text-lg sm:text-xl font-bold font-mono-math text-yellow-400 tracking-wide break-all">
+                    y = a*x + b
+                </div>
+            </div>
+
+            <!-- 그래프 좌표평면 Canvas -->
+            <div id="canvas-container" class="w-full h-full relative cursor-crosshair">
+                <canvas id="graph-canvas" class="block w-full h-full"></canvas>
+            </div>
+
+            <!-- 마우스/터치 위치 표시바 (하단) -->
+            <div class="absolute bottom-3 left-4 bg-slate-900/80 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl text-xs text-slate-300 flex items-center gap-3 pointer-events-none z-10 shadow-lg">
+                <div><span class="text-slate-500 font-medium">좌표:</span> <span id="coords-display" class="font-mono-math text-yellow-400">(0.00, 0.00)</span></div>
+                <div class="hidden sm:block"><span class="text-slate-500 font-medium">함숫값 f(x):</span> <span id="fx-display" class="font-mono-math text-emerald-400">0.00</span></div>
+            </div>
+        </main>
+
+        <!-- 우측: 설정 & 파라미터 조작 패널 -->
+        <aside id="side-panel" class="absolute lg:relative right-0 top-0 bottom-0 w-full sm:w-80 lg:w-96 bg-slate-900/95 backdrop-blur-xl border-l border-slate-800 p-4 flex flex-col gap-5 z-30 transition-transform transform translate-x-full lg:translate-x-0 overflow-y-auto">
+            
+            <!-- 모바일용 닫기 버튼 -->
+            <div class="flex lg:hidden justify-between items-center pb-2 border-b border-slate-800">
+                <h2 class="font-bold text-sm text-slate-200">함수 설정 & 조작</h2>
+                <button id="btn-close-panel" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- 1. 고등학교 수학 함수 유형 선택 -->
+            <div>
+                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                    <i class="fa-solid fa-layer-group text-indigo-400 mr-1.5"></i>함수 유형 (교육과정)
+                </label>
+                <select id="preset-select" class="w-full bg-slate-800 border border-slate-700 text-slate-100 rounded-xl px-3 py-2.5 text-sm font-medium focus:outline-none focus:border-indigo-500 transition">
+                    <!-- JS로 동적 생성 -->
+                </select>
+            </div>
+
+            <!-- 2. 직접 수식 입력 -->
+            <div>
+                <div class="flex justify-between items-center mb-1.5">
+                    <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block">
+                        <i class="fa-solid fa-keyboard text-indigo-400 mr-1.5"></i>직접 함수식 입력
+                    </label>
+                    <span class="text-[10px] text-slate-500">x, a, b, c, d 사용</span>
+                </div>
+                <div class="flex gap-2">
+                    <div class="relative flex-1">
+                        <span class="absolute left-3 top-2.5 text-slate-400 font-mono-math text-sm">f(x)=</span>
+                        <input type="text" id="custom-formula-input" placeholder="a*x^2 + b*x + c" class="w-full bg-slate-800 border border-slate-700 text-yellow-400 font-mono-math rounded-xl pl-14 pr-3 py-2 text-sm focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                    <button id="btn-apply-formula" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs px-3 py-2 rounded-xl transition shadow-md">
+                        적용
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. 파라미터 조작 슬라이더 (a, b, c, d) -->
+            <div class="space-y-3 bg-slate-950/40 p-3.5 rounded-2xl border border-slate-800">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">
+                        <i class="fa-solid fa-sliders text-amber-400 mr-1.5"></i>계수 및 상수 조작
+                    </span>
+                    <button id="btn-reset-params" class="text-[11px] text-slate-400 hover:text-indigo-400 transition underline">
+                        계수 초기화
+                    </button>
+                </div>
+
+                <!-- 파라미터 a -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-bold font-mono-math text-indigo-400">a (최고차항/진폭/비율)</span>
+                        <span id="param-a-val" class="font-mono-math text-slate-200 bg-slate-800 px-1.5 py-0.5 rounded">1.0</span>
+                    </div>
+                    <input type="range" id="param-a" min="-5" max="5" step="0.1" value="1" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <!-- 파라미터 b -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-bold font-mono-math text-indigo-400">b (좌우 이동/주기)</span>
+                        <span id="param-b-val" class="font-mono-math text-slate-200 bg-slate-800 px-1.5 py-0.5 rounded">0.0</span>
+                    </div>
+                    <input type="range" id="param-b" min="-5" max="5" step="0.1" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <!-- 파라미터 c -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-bold font-mono-math text-indigo-400">c (상수항/상하 이동)</span>
+                        <span id="param-c-val" class="font-mono-math text-slate-200 bg-slate-800 px-1.5 py-0.5 rounded">0.0</span>
+                    </div>
+                    <input type="range" id="param-c" min="-5" max="5" step="0.1" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <!-- 파라미터 d -->
+                <div class="space-y-1">
+                    <div class="flex justify-between text-xs">
+                        <span class="font-bold font-mono-math text-indigo-400">d (추가 보정 상수)</span>
+                        <span id="param-d-val" class="font-mono-math text-slate-200 bg-slate-800 px-1.5 py-0.5 rounded">0.0</span>
+                    </div>
+                    <input type="range" id="param-d" min="-5" max="5" step="0.1" value="0" class="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+            </div>
+
+            <!-- 4. 정수 x에 대한 주요 함숫값 표 -->
+            <div class="flex-1 min-h-[200px] flex flex-col">
+                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">
+                    <i class="fa-solid fa-table-cells text-emerald-400 mr-1.5"></i>주요 함숫값 표 (x = -5 ~ 5)
+                </label>
+                <div class="flex-1 border border-slate-800 rounded-xl overflow-hidden bg-slate-950/60 flex flex-col">
+                    <div class="overflow-y-auto max-h-48">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-slate-800/80 text-slate-400 sticky top-0 font-medium">
+                                <tr>
+                                    <th class="py-2 px-3 text-center border-b border-slate-700/60">x</th>
+                                    <th class="py-2 px-3 text-center border-b border-slate-700/60">y = f(x)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="values-table-body" class="divide-y divide-slate-800/50 font-mono-math">
+                                <!-- JS로 렌더링 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+    </div>
+
+    <!-- 스크립트 영역 -->
+    <script>
+        /**
+         * ==========================================
+         * [교사용 설정 구역 CONFIGURATION]
+         * 수업 내용에 맞추어 기본값 및 프리셋을 수정할 수 있습니다.
+         * ==========================================
+         */
+        const CONFIG = {
+            // 좌표평면 초기 영역 범위 (-X_RANGE ~ +X_RANGE)
+            initialXRange: 10,
+            
+            // 색상 테마 (그래프 선 색상은 노란색 #facc15)
+            colors: {
+                axis: '#94a3b8',        // 축 색상 (slate-400)
+                grid: '#1e293b',        // 격자 색상 (slate-800)
+                graph: '#facc15',       // 그래프 기본 색상 (yellow-400)
+                points: '#f43f5e',      // 절편 및 주요 특성점 (rose-500)
+                asymptote: '#f59e0b',   // 점근선 색상 (amber-500)
+                crosshair: '#38bdf8'    // 마우스/터치 위치선 (sky-400)
+            },
+
+            // 고등학교 수학 교육과정 기본 함수 프리셋 목록
+            presets: [
+                { id: 'linear', name: '1차 다항함수', formula: 'a*x + b', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'quadratic', name: '2차 다항함수', formula: 'a*(x-b)^2 + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'cubic', name: '3차 다항함수', formula: 'a*x^3 + b*x^2 + c*x + d', defaultParams: { a: 0.5, b: 0, c: -2, d: 0 } },
+                { id: 'rational', name: '유리함수 (분수함수)', formula: 'a/(x - b) + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'radical', name: '무리함수 (제곱근)', formula: 'a*sqrt(x - b) + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'exponential', name: '지수함수', formula: 'a * 2^(x - b) + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'logarithmic', name: '로그함수 (자연/상용)', formula: 'a * log(x - b) + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'sin', name: '삼각함수 (사인 sin)', formula: 'a * sin(b*x + c) + d', defaultParams: { a: 2, b: 1, c: 0, d: 0 } },
+                { id: 'cos', name: '삼각함수 (코사인 cos)', formula: 'a * cos(b*x + c) + d', defaultParams: { a: 2, b: 1, c: 0, d: 0 } }
+            ]
+        };
+
+        // 애플리케이션 상태 (State)
+        const state = {
+            currentExpr: CONFIG.presets[0].formula,
+            params: { ...CONFIG.presets[0].defaultParams },
+            viewport: {
+                centerX: 0,
+                centerY: 0,
+                xRange: CONFIG.initialXRange
+            },
+            isDragging: false,
+            lastMousePos: { x: 0, y: 0 },
+            hoverCoords: null
+        };
+
+        // DOM 요소 획득
+        const canvas = document.getElementById('graph-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        const presetSelect = document.getElementById('preset-select');
+        const customFormulaInput = document.getElementById('custom-formula-input');
+        const btnApplyFormula = document.getElementById('btn-apply-formula');
+        const renderedFormulaEl = document.getElementById('rendered-formula');
+
+        const paramSliders = {
+            a: document.getElementById('param-a'),
+            b: document.getElementById('param-b'),
+            c: document.getElementById('param-c'),
+            d: document.getElementById('param-d')
+        };
+        const paramVals = {
+            a: document.getElementById('param-a-val'),
+            b: document.getElementById('param-b-val'),
+            c: document.getElementById('param-c-val'),
+            d: document.getElementById('param-d-val')
+        };
+
+        const btnResetParams = document.getElementById('btn-reset-params');
+        const btnResetView = document.getElementById('btn-reset-view');
+        const coordsDisplay = document.getElementById('coords-display');
+        const fxDisplay = document.getElementById('fx-display');
+        const valuesTableBody = document.getElementById('values-table-body');
+
+        const sidePanel = document.getElementById('side-panel');
+        const btnTogglePanel = document.getElementById('btn-toggle-panel');
+        const btnClosePanel = document.getElementById('btn-close-panel');
+
+        // 수학식 안심 연산 파서 (Math 파싱 및 연산)
+        function evaluateMath(expression, xVal, params) {
+            try {
+                let expr = expression
+                    .replace(/\^/g, '**')
+                    .replace(/sqrt/g, 'Math.sqrt')
+                    .replace(/abs/g, 'Math.abs')
+                    .replace(/sin/g, 'Math.sin')
+                    .replace(/cos/g, 'Math.cos')
+                    .replace(/tan/g, 'Math.tan')
+                    .replace(/log/g, 'Math.log10')
+                    .replace(/ln/g, 'Math.log');
+
+                // 함수 내 변수 조작
+                const func = new Function('x', 'a', 'b', 'c', 'd', `return ${expr};`);
+                const res = func(xVal, params.a, params.b, params.c, params.d);
+                return (isNaN(res) || !isFinite(res)) ? null : res;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        // 초기화 및 프리셋 드롭다운 생성
+        function initUI() {
+            presetSelect.innerHTML = CONFIG.presets.map((p, idx) => 
+                `<option value="${idx}">${p.name} [ ${p.formula} ]</option>`
+            ).join('');
+
+            updateParamUI();
+            updateValuesTable();
+            resizeCanvas();
+        }
+
+        // Canvas 크기 조절
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            render();
+        }
+
+        // 좌표계 변환: 수학 좌표 (x, y) -> Canvas 화면 좌표 (px, py)
+        function toScreenCoords(x, y) {
+            const aspect = canvas.width / canvas.height;
+            const yRange = state.viewport.xRange / aspect;
+
+            const px = ((x - state.viewport.centerX) / state.viewport.xRange + 0.5) * canvas.width;
+            const py = (0.5 - (y - state.viewport.centerY) / yRange) * canvas.height;
+            return { x: px, y: py };
+        }
+
+        // 좌표계 변환: Canvas 화면 좌표 (px, py) -> 수학 좌표 (x, y)
+        function toMathCoords(px, py) {
+            const aspect = canvas.width / canvas.height;
+            const yRange = state.viewport.xRange / aspect;
+
+            const x = (px / canvas.width - 0.5) * state.viewport.xRange + state.viewport.centerX;
+            const y = (0.5 - py / canvas.height) * yRange + state.viewport.centerY;
+            return { x, y };
+        }
+
+        // 메인 렌더링 루트 루틴
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const aspect = canvas.width / canvas.height;
+            const yRange = state.viewport.xRange / aspect;
+
+            const minX = state.viewport.centerX - state.viewport.xRange / 2;
+            const maxX = state.viewport.centerX + state.viewport.xRange / 2;
+            const minY = state.viewport.centerY - yRange / 2;
+            const maxY = state.viewport.centerY + yRange / 2;
+
+            // 1. 격자선(Grid) 및 축(Axes) 그리기
+            drawGridAndAxes(minX, maxX, minY, maxY);
+
+            // 2. 메인 함수 그래프 (노란색 #facc15) 렌더링
+            drawGraph(minX, maxX);
+
+            // 3. 주요 점 (x-절편, y-절편) 표시
+            drawKeyPoints(minX, maxX);
+
+            // 4. 마우스/터치 위치 십자가 가이드라인 및 좌표 렌더링
+            if (state.hoverCoords) {
+                drawCrosshair(state.hoverCoords);
+            }
+
+            // 5. 상단 수식 텍스트 갱신
+            updateFormulaDisplay();
+        }
+
+        // 1. 좌표평면 격자선 및 x, y 축 그리기
+        function drawGridAndAxes(minX, maxX, minY, maxY) {
+            // 눈금 간격 계산
+            const rawStep = state.viewport.xRange / 10;
+            const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+            let step = magnitude;
+            if (rawStep / magnitude > 5) step = 5 * magnitude;
+            else if (rawStep / magnitude > 2) step = 2 * magnitude;
+
+            ctx.lineWidth = 1;
+            ctx.setFont = '11px Fira Code';
+            ctx.fillStyle = CONFIG.colors.axis;
+
+            // 격자 (Sub Grid)
+            const startX = Math.floor(minX / step) * step;
+            for (let x = startX; x <= maxX; x += step) {
+                const { x: px } = toScreenCoords(x, 0);
+                ctx.strokeStyle = CONFIG.colors.grid;
+                ctx.beginPath();
+                ctx.moveTo(px, 0);
+                ctx.lineTo(px, canvas.height);
+                ctx.stroke();
+
+                // x축 눈금 숫자
+                if (Math.abs(x) > 1e-6) {
+                    const { y: pyZero } = toScreenCoords(0, 0);
+                    const clampedY = Math.max(20, Math.min(canvas.height - 10, pyZero + 15));
+                    ctx.fillText(x.toFixed(step < 1 ? 1 : 0), px - 8, clampedY);
+                }
+            }
+
+            const startY = Math.floor(minY / step) * step;
+            for (let y = startY; y <= maxY; y += step) {
+                const { y: py } = toScreenCoords(0, y);
+                ctx.strokeStyle = CONFIG.colors.grid;
+                ctx.beginPath();
+                ctx.moveTo(0, py);
+                ctx.lineTo(canvas.width, py);
+                ctx.stroke();
+
+                // y축 눈금 숫자
+                if (Math.abs(y) > 1e-6) {
+                    const { x: pxZero } = toScreenCoords(0, 0);
+                    const clampedX = Math.max(10, Math.min(canvas.width - 30, pxZero + 8));
+                    ctx.fillText(y.toFixed(step < 1 ? 1 : 0), clampedX, py + 4);
+                }
+            }
+
+            // 주 축 (X축 & Y축)
+            const origin = toScreenCoords(0, 0);
+            ctx.strokeStyle = CONFIG.colors.axis;
+            ctx.lineWidth = 2;
+
+            // X축
+            ctx.beginPath();
+            ctx.moveTo(0, origin.y);
+            ctx.lineTo(canvas.width, origin.y);
+            ctx.stroke();
+
+            // Y축
+            ctx.beginPath();
+            ctx.moveTo(origin.x, 0);
+            ctx.lineTo(origin.x, canvas.height);
+            ctx.stroke();
+        }
+
+        // 2. 함수 그래프 렌더링 (노란색 곡선)
+        function drawGraph(minX, maxX) {
+            ctx.strokeStyle = CONFIG.colors.graph;
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+
+            const stepPx = 2; // 화면 픽셀 단위 단계
+            let isDrawing = false;
+
+            for (let px = 0; px <= canvas.width; px += stepPx) {
+                const mathPt = toMathCoords(px, 0);
+                const yVal = evaluateMath(state.currentExpr, mathPt.x, state.params);
+
+                if (yVal !== null) {
+                    const screenPt = toScreenCoords(mathPt.x, yVal);
+                    
+                    // 화면 밖 발산 또는 불연속점 처리
+                    if (screenPt.y < -canvas.height || screenPt.y > canvas.height * 2) {
+                        isDrawing = false;
+                    } else {
+                        if (!isDrawing) {
+                            ctx.moveTo(screenPt.x, screenPt.y);
+                            isDrawing = true;
+                        } else {
+                            ctx.lineTo(screenPt.x, screenPt.y);
+                        }
+                    }
+                } else {
+                    isDrawing = false;
+                }
+            }
+            ctx.stroke();
+        }
+
+        // 3. 주요 특징점 (절편 등) 강조 표시
+        function drawKeyPoints(minX, maxX) {
+            // y-절편 (x=0)
+            const yIntercept = evaluateMath(state.currentExpr, 0, state.params);
+            if (yIntercept !== null) {
+                const pt = toScreenCoords(0, yIntercept);
+                if (pt.x >= 0 && pt.x <= canvas.width && pt.y >= 0 && pt.y <= canvas.height) {
+                    drawPoint(pt.x, pt.y, CONFIG.colors.points, `y절편 (0, ${yIntercept.toFixed(2)})`);
+                }
+            }
+        }
+
+        function drawPoint(px, py, color, label) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(px, py, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        }
+
+        // 4. 마우스/터치 위치 십자선
+        function drawCrosshair(coords) {
+            const pt = toScreenCoords(coords.x, coords.y);
+
+            ctx.strokeStyle = CONFIG.colors.crosshair;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 4]);
+
+            // Vertical line
+            ctx.beginPath();
+            ctx.moveTo(pt.x, 0);
+            ctx.lineTo(pt.x, canvas.height);
+            ctx.stroke();
+
+            // Horizontal line
+            ctx.beginPath();
+            ctx.moveTo(0, pt.y);
+            ctx.lineTo(canvas.width, pt.y);
+            ctx.stroke();
+
+            ctx.setLineDash([]); // Reset line dash
+        }
+
+        // 상단 수식 텍스트 렌더링 갱신
+        function updateFormulaDisplay() {
+            let formulaStr = state.currentExpr;
+            // 파라미터 값 실시간 치환 표현
+            renderedFormulaEl.textContent = `y = ${formulaStr}`;
+        }
+
+        // 파라미터 UI 동기화
+        function updateParamUI() {
+            for (const key in state.params) {
+                paramSliders[key].value = state.params[key];
+                paramVals[key].textContent = parseFloat(state.params[key]).toFixed(1);
+            }
+        }
+
+        // 함숫값 표 업데이트 (x = -5 ~ 5)
+        function updateValuesTable() {
+            let html = '';
+            for (let x = -5; x <= 5; x++) {
+                const y = evaluateMath(state.currentExpr, x, state.params);
+                const yStr = y !== null ? (Number.isInteger(y) ? y : y.toFixed(2)) : '정의되지 않음';
+                html += `
+                    <tr class="hover:bg-slate-800/40">
+                        <td class="py-1.5 px-3 text-center font-bold text-slate-400">${x}</td>
+                        <td class="py-1.5 px-3 text-center text-yellow-400 font-medium">${yStr}</td>
+                    </tr>
+                `;
+            }
+            valuesTableBody.innerHTML = html;
+        }
+
+        // 이벤트 리스너 등록
+        function setupEventListeners() {
+            // Window Resize
+            window.addEventListener('resize', resizeCanvas);
+
+            // 프리셋 선택
+            presetSelect.addEventListener('change', (e) => {
+                const preset = CONFIG.presets[e.target.value];
+                state.currentExpr = preset.formula;
+                state.params = { ...preset.defaultParams };
+                customFormulaInput.value = preset.formula;
+                updateParamUI();
+                updateValuesTable();
+                render();
+            });
+
+            // 직접 수식 입력
+            btnApplyFormula.addEventListener('click', () => {
+                const val = customFormulaInput.value.trim();
+                if (val) {
+                    state.currentExpr = val;
+                    updateValuesTable();
+                    render();
+                }
+            });
+
+            // 파라미터 슬라이더 입력 이벤트
+            ['a', 'b', 'c', 'd'].forEach(p => {
+                paramSliders[p].addEventListener('input', (e) => {
+                    state.params[p] = parseFloat(e.target.value);
+                    paramVals[p].textContent = state.params[p].toFixed(1);
+                    updateValuesTable();
+                    render();
+                });
+            });
+
+            // 파라미터 초기화
+            btnResetParams.addEventListener('click', () => {
+                state.params = { a: 1, b: 0, c: 0, d: 0 };
+                updateParamUI();
+                updateValuesTable();
+                render();
+            });
+
+            // 원점 맞추기
+            btnResetView.addEventListener('click', () => {
+                state.viewport.centerX = 0;
+                state.viewport.centerY = 0;
+                state.viewport.xRange = CONFIG.initialXRange;
+                render();
+            });
+
+            // 마우스/터치 드래그 & 줌 인터랙션
+            container.addEventListener('mousedown', (e) => {
+                state.isDragging = true;
+                state.lastMousePos = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                if (mouseX >= 0 && mouseX <= canvas.width && mouseY >= 0 && mouseY <= canvas.height) {
+                    const mathPt = toMathCoords(mouseX, mouseY);
+                    state.hoverCoords = mathPt;
+                    coordsDisplay.textContent = `(${mathPt.x.toFixed(2)}, ${mathPt.y.toFixed(2)})`;
+                    
+                    const fxVal = evaluateMath(state.currentExpr, mathPt.x, state.params);
+                    fxDisplay.textContent = fxVal !== null ? fxVal.toFixed(2) : '정의되지 않음';
+                } else {
+                    state.hoverCoords = null;
+                }
+
+                if (state.isDragging) {
+                    const dx = e.clientX - state.lastMousePos.x;
+                    const dy = e.clientY - state.lastMousePos.y;
+
+                    const aspect = canvas.width / canvas.height;
+                    const yRange = state.viewport.xRange / aspect;
+
+                    state.viewport.centerX -= (dx / canvas.width) * state.viewport.xRange;
+                    state.viewport.centerY += (dy / canvas.height) * yRange;
+
+                    state.lastMousePos = { x: e.clientX, y: e.clientY };
+                }
+                render();
+            });
+
+            window.addEventListener('mouseup', () => {
+                state.isDragging = false;
+            });
+
+            // 휠 줌 (Zoom In/Out)
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+                state.viewport.xRange *= zoomFactor;
+                // 최소/최대 확대/축소 제한
+                state.viewport.xRange = Math.max(2, Math.min(200, state.viewport.xRange));
+                render();
+            }, { passive: false });
+
+            // 터치 이벤트 지원 (모바일/태블릿)
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    state.isDragging = true;
+                    state.lastMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            container.addEventListener('touchmove', (e) => {
+                if (state.isDragging && e.touches.length === 1) {
+                    const dx = e.touches[0].clientX - state.lastMousePos.x;
+                    const dy = e.touches[0].clientY - state.lastMousePos.y;
+
+                    const aspect = canvas.width / canvas.height;
+                    const yRange = state.viewport.xRange / aspect;
+
+                    state.viewport.centerX -= (dx / canvas.width) * state.viewport.xRange;
+                    state.viewport.centerY += (dy / canvas.height) * yRange;
+
+                    state.lastMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    render();
+                }
+            });
+
+            container.addEventListener('touchend', () => {
+                state.isDragging = false;
+            });
+
+            // 모바일 패널 토글
+            btnTogglePanel.addEventListener('click', () => {
+                sidePanel.classList.remove('translate-x-full');
+            });
+            btnClosePanel.addEventListener('click', () => {
+                sidePanel.classList.add('translate-x-full');
+            });
+        }
+
+        // 애플리케이션 시작
+        window.onload = function() {
+            initUI();
+            setupEventListeners();
+        };
+    </script>
+</body>
+</html>
