@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="ko" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>고등학교 수학 함수 그래프 탐구 도구</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Jua & Gowun Dodum (SIL Open Font License) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --cream: #fff8e7;
+            --ch: #2b2b2b;
+            --peach: #ffd9c2;
+            --mint: #d4f0dc;
+            --sky: #d6e9ff;
+            --lemon: #fff0a6;
+            --dz: #ffc93c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--cream);
+            color: var(--ch);
+            font-family: 'Gowun Dodum', sans-serif;
+            font-size: 16px;
+            line-height: 1.6;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            word-break: keep-all;
+            overflow-wrap: anywhere;
+        }
+
+        h1, h2, h3, .font-jua, .btn-jua {
+            font-family: 'Jua', sans-serif;
+            font-weight: 400;
+        }
+
+        .font-mono-math {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* 햇살 게시판 시그니처 박스 및 그림자 */
+        .sunny-box {
+            background: #ffffff;
+            border: 3px solid var(--ch);
+            border-radius: 24px;
+            box-shadow: 5px 5px 0 var(--ch);
+        }
+
+        .sunny-box-sm {
+            background: #ffffff;
+            border: 3px solid var(--ch);
+            border-radius: 16px;
+            box-shadow: 3px 3px 0 var(--ch);
+        }
+
+        .sunny-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid var(--ch);
+            border-radius: 100px;
+            padding: 8px 18px;
+            font-family: 'Jua', sans-serif;
+            font-size: 16px;
+            color: var(--ch);
+            background: #ffffff;
+            box-shadow: 4px 4px 0 var(--ch);
+            transition: all 0.1s ease;
+            cursor: pointer;
+        }
+
+        .sunny-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0 var(--ch);
+        }
+
+        .sunny-btn.primary {
+            background: var(--dz);
+        }
+
+        /* 파스텔 백그라운드 색상 바인딩 */
+        .bg-lemon { background-color: var(--lemon); }
+        .bg-sky { background-color: var(--sky); }
+        .bg-peach { background-color: var(--peach); }
+        .bg-mint { background-color: var(--mint); }
+        .bg-cream { background-color: var(--cream); }
+
+        /* 커스텀 스크롤바 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--cream);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--peach);
+            border: 2px solid var(--ch);
+            border-radius: 10px;
+        }
+
+        /* 슬라이더 커스텀 */
+        input[type=range] {
+            accent-color: var(--ch);
+        }
+    </style>
+</head>
+<body class="h-full flex flex-col overflow-hidden text-slate-800">
+
+    <!-- 상단 헤더 (전자칠판 및 모바일 공용) -->
+    <header class="h-16 border-b-4 border-[var(--ch)] bg-[var(--lemon)] px-4 flex items-center justify-between z-20 shrink-0 relative overflow-hidden">
+        
+        <!-- 데코레이션 SVG (해/구름) -->
+        <div class="absolute right-36 -top-2 pointer-events-none opacity-80 hidden md:block">
+            <svg width="45" height="45" viewBox="0 0 100 100" fill="none">
+                <circle cx="50" cy="50" r="28" fill="#ffc93c" stroke="#2b2b2b" stroke-width="6"/>
+                <path d="M50 8V18M50 82V92M8 50H18M82 50H92M20 20L27 27M73 73L80 80M20 80L27 73M73 27L80 20" stroke="#2b2b2b" stroke-width="6" stroke-linecap="round"/>
+            </svg>
+        </div>
+
+        <div class="flex items-center gap-3 z-10">
+            <div class="h-10 w-10 rounded-full bg-[var(--dz)] border-3 border-[var(--ch)] flex items-center justify-center text-[var(--ch)] font-bold shadow-[2px_2px_0_#2b2b2b]">
+                <i class="fa-solid fa-chart-line text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg sm:text-xl leading-none text-[var(--ch)]">함수 그래프 탐구 도구</h1>
+                <p class="text-xs text-[var(--ch)] opacity-80 mt-0.5">고등학교 수학 - 햇살 교실 게시판 판서용</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 z-10">
+            <button id="btn-reset-view" title="화면 위치 원점으로 초기화" class="sunny-btn text-xs sm:text-sm py-1.5 px-3">
+                <i class="fa-solid fa-arrows-to-dot mr-1"></i>
+                <span>원점 맞추기</span>
+            </button>
+            <button id="btn-toggle-panel" class="lg:hidden sunny-btn primary text-xs sm:text-sm py-1.5 px-3">
+                <i class="fa-solid fa-sliders mr-1"></i>
+                <span>설정</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 메인 레이아웃 -->
+    <div class="flex-1 flex overflow-hidden relative">
+        
+        <!-- 좌측/중앙: Canvas 그래프 영역 -->
+        <main class="flex-1 bg-[var(--cream)] flex flex-col relative overflow-hidden">
+            
+            <!-- 상단 수식 렌더링 카드 (전자칠판 가독성 극대화) -->
+            <div class="absolute top-4 left-4 z-10 sunny-box px-5 py-3 flex flex-col gap-0.5 max-w-[90vw] sm:max-w-md bg-white">
+                <div class="flex items-center gap-2">
+                    <span class="inline-block bg-[var(--lemon)] border-2 border-[var(--ch)] rounded-full px-2.5 py-0.5 text-xs font-bold text-[var(--ch)] shadow-[2px_2px_0_#2b2b2b]">
+                        탐구 중인 함수
+                    </span>
+                </div>
+                <div id="rendered-formula" class="text-xl sm:text-2xl font-bold font-mono-math text-[var(--ch)] tracking-wide break-all mt-1">
+                    y = a*x + b
+                </div>
+            </div>
+
+            <!-- 모서리 손그림 데이지 SVG 장식 -->
+            <div class="absolute bottom-12 right-6 pointer-events-none opacity-40 z-10 hidden sm:block">
+                <svg width="60" height="60" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="16" fill="#ffc93c" stroke="#2b2b2b" stroke-width="5"/>
+                    <ellipse cx="50" cy="18" rx="10" ry="16" fill="#ffffff" stroke="#2b2b2b" stroke-width="5"/>
+                    <ellipse cx="50" cy="82" rx="10" ry="16" fill="#ffffff" stroke="#2b2b2b" stroke-width="5"/>
+                    <ellipse cx="18" cy="50" rx="16" ry="10" fill="#ffffff" stroke="#2b2b2b" stroke-width="5"/>
+                    <ellipse cx="82" cy="50" rx="16" ry="10" fill="#ffffff" stroke="#2b2b2b" stroke-width="5"/>
+                </svg>
+            </div>
+
+            <!-- 그래프 좌표평면 Canvas -->
+            <div id="canvas-container" class="w-full h-full relative cursor-crosshair">
+                <canvas id="graph-canvas" class="block w-full h-full"></canvas>
+            </div>
+
+            <!-- 마우스/터치 위치 표시바 (하단) -->
+            <div class="absolute bottom-3 left-4 sunny-box-sm px-4 py-2 text-xs text-[var(--ch)] flex items-center gap-4 pointer-events-none z-10 bg-white/95">
+                <div><span class="font-bold opacity-75">좌표:</span> <span id="coords-display" class="font-mono-math font-bold text-indigo-700">(0.00, 0.00)</span></div>
+                <div class="hidden sm:block"><span class="font-bold opacity-75">함숫값 f(x):</span> <span id="fx-display" class="font-mono-math font-bold text-emerald-700">0.00</span></div>
+            </div>
+        </main>
+
+        <!-- 우측: 설정 & 파라미터 조작 패널 -->
+        <aside id="side-panel" class="absolute lg:relative right-0 top-0 bottom-0 w-full sm:w-80 lg:w-96 bg-[var(--cream)] border-l-4 border-[var(--ch)] p-4 flex flex-col gap-4 z-30 transition-transform transform translate-x-full lg:translate-x-0 overflow-y-auto">
+            
+            <!-- 모바일용 닫기 버튼 -->
+            <div class="flex lg:hidden justify-between items-center pb-2 border-b-2 border-[var(--ch)]">
+                <h2 class="font-bold text-lg text-[var(--ch)]">함수 설정 & 조작</h2>
+                <button id="btn-close-panel" class="sunny-btn py-1 px-2.5 text-xs">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <!-- 1. 고등학교 수학 함수 유형 선택 -->
+            <div class="sunny-box p-3.5 bg-[var(--sky)]">
+                <label class="text-xs font-bold text-[var(--ch)] uppercase tracking-wider block mb-1.5 font-jua text-sm">
+                    <i class="fa-solid fa-layer-group mr-1"></i>함수 유형 (교육과정)
+                </label>
+                <select id="preset-select" class="w-full bg-white border-3 border-[var(--ch)] text-[var(--ch)] rounded-xl px-3 py-2 text-sm font-bold focus:outline-none shadow-[3px_3px_0_#2b2b2b]">
+                    <!-- JS로 동적 생성 -->
+                </select>
+            </div>
+
+            <!-- 2. 직접 수식 입력 -->
+            <div class="sunny-box p-3.5 bg-[var(--peach)]">
+                <div class="flex justify-between items-center mb-1">
+                    <label class="text-xs font-bold text-[var(--ch)] block font-jua text-sm">
+                        <i class="fa-solid fa-keyboard mr-1"></i>직접 함수식 입력
+                    </label>
+                    <span class="text-[10px] text-[var(--ch)] opacity-70">x, a, b, c, d 사용</span>
+                </div>
+                <div class="flex gap-2 mt-1">
+                    <div class="relative flex-1">
+                        <span class="absolute left-3 top-2 text-[var(--ch)] font-mono-math text-sm font-bold">f(x)=</span>
+                        <input type="text" id="custom-formula-input" placeholder="a*x^2 + b*x + c" class="w-full bg-white border-3 border-[var(--ch)] text-[var(--ch)] font-mono-math font-bold rounded-xl pl-14 pr-2 py-1.5 text-sm focus:outline-none shadow-[3px_3px_0_#2b2b2b]">
+                    </div>
+                    <button id="btn-apply-formula" class="sunny-btn primary text-xs px-3 py-1.5">
+                        적용
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. 파라미터 조작 슬라이더 (a, b, c, d) -->
+            <div class="sunny-box p-3.5 bg-[var(--mint)] space-y-2.5">
+                <div class="flex justify-between items-center border-b-2 border-[var(--ch)] pb-1">
+                    <span class="text-sm font-bold text-[var(--ch)] font-jua">
+                        <i class="fa-solid fa-sliders mr-1"></i>계수 및 상수 조작
+                    </span>
+                    <button id="btn-reset-params" class="text-xs font-bold text-[var(--ch)] hover:underline">
+                        계수 초기화
+                    </button>
+                </div>
+
+                <!-- 파라미터 a -->
+                <div class="space-y-0.5">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="font-mono-math">a (최고차항/진폭)</span>
+                        <span id="param-a-val" class="font-mono-math bg-white px-2 py-0.5 rounded-md border-2 border-[var(--ch)]">1.0</span>
+                    </div>
+                    <input type="range" id="param-a" min="-5" max="5" step="0.1" value="1" class="w-full h-2 rounded-lg cursor-pointer">
+                </div>
+
+                <!-- 파라미터 b -->
+                <div class="space-y-0.5">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="font-mono-math">b (좌우 이동/주기)</span>
+                        <span id="param-b-val" class="font-mono-math bg-white px-2 py-0.5 rounded-md border-2 border-[var(--ch)]">0.0</span>
+                    </div>
+                    <input type="range" id="param-b" min="-5" max="5" step="0.1" value="0" class="w-full h-2 rounded-lg cursor-pointer">
+                </div>
+
+                <!-- 파라미터 c -->
+                <div class="space-y-0.5">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="font-mono-math">c (상수항/상하 이동)</span>
+                        <span id="param-c-val" class="font-mono-math bg-white px-2 py-0.5 rounded-md border-2 border-[var(--ch)]">0.0</span>
+                    </div>
+                    <input type="range" id="param-c" min="-5" max="5" step="0.1" value="0" class="w-full h-2 rounded-lg cursor-pointer">
+                </div>
+
+                <!-- 파라미터 d -->
+                <div class="space-y-0.5">
+                    <div class="flex justify-between text-xs font-bold">
+                        <span class="font-mono-math">d (추가 보정 상수)</span>
+                        <span id="param-d-val" class="font-mono-math bg-white px-2 py-0.5 rounded-md border-2 border-[var(--ch)]">0.0</span>
+                    </div>
+                    <input type="range" id="param-d" min="-5" max="5" step="0.1" value="0" class="w-full h-2 rounded-lg cursor-pointer">
+                </div>
+            </div>
+
+            <!-- 4. 정수 x에 대한 주요 함숫값 표 -->
+            <div class="flex-1 min-h-[160px] flex flex-col">
+                <label class="text-sm font-bold text-[var(--ch)] uppercase block mb-1 font-jua">
+                    <i class="fa-solid fa-table-cells mr-1"></i>주요 함숫값 표 (x = -5 ~ 5)
+                </label>
+                <div class="flex-1 sunny-box overflow-hidden bg-white flex flex-col">
+                    <div class="overflow-y-auto max-h-40">
+                        <table class="w-full text-xs text-left">
+                            <thead class="bg-[var(--lemon)] text-[var(--ch)] sticky top-0 font-jua text-sm border-b-2 border-[var(--ch)]">
+                                <tr>
+                                    <th class="py-1.5 px-3 text-center border-r-2 border-[var(--ch)]">x</th>
+                                    <th class="py-1.5 px-3 text-center">y = f(x)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="values-table-body" class="divide-y-2 divide-[var(--ch)] font-mono-math text-slate-800">
+                                <!-- JS로 렌더링 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </aside>
+    </div>
+
+    <!-- 스크립트 영역 -->
+    <script>
+        /**
+         * ==========================================
+         * [교사용 설정 구역 CONFIGURATION]
+         * 수업 내용에 맞추어 기본값 및 프리셋을 수정할 수 있습니다.
+         * ==========================================
+         */
+        const CONFIG = {
+            // 좌표평면 초기 영역 범위 (-X_RANGE ~ +X_RANGE)
+            initialXRange: 10,
+            
+            // 색상 테마 (햇살 게시판 컨셉 적용)
+            colors: {
+                axis: '#2b2b2b',        // 축 색상 (차콜 #2b2b2b)
+                grid: '#ffd9c2',        // 격자 색상 (피치 파스텔)
+                graph: '#facc15',       // 그래프 기본 색상 (노란색 #facc15)
+                points: '#e11d48',      // 절편 및 주요 특성점 (로즈 레드)
+                asymptote: '#d97706',   // 점근선 색상
+                crosshair: '#2563eb'    // 마우스/터치 위치선
+            },
+
+            // 고등학교 수학 교육과정 기본 함수 프리셋 목록
+            presets: [
+                { id: 'linear', name: '1차 다항함수', formula: 'a*x + b', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'quadratic', name: '2차 다항함수', formula: 'a*(x-b)^2 + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'cubic', name: '3차 다항함수', formula: 'a*x^3 + b*x^2 + c*x + d', defaultParams: { a: 0.5, b: 0, c: -2, d: 0 } },
+                { id: 'rational', name: '유리함수 (분수함수)', formula: 'a/(x - b) + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'radical', name: '무리함수 (제곱근)', formula: 'a*sqrt(x - b) + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'exponential', name: '지수함수', formula: 'a * 2^(x - b) + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'logarithmic', name: '로그함수 (자연/상용)', formula: 'a * log(x - b) + c', defaultParams: { a: 1, b: 0, c: 0, d: 0 } },
+                { id: 'sin', name: '삼각함수 (사인 sin)', formula: 'a * sin(b*x + c) + d', defaultParams: { a: 2, b: 1, c: 0, d: 0 } },
+                { id: 'cos', name: '삼각함수 (코사인 cos)', formula: 'a * cos(b*x + c) + d', defaultParams: { a: 2, b: 1, c: 0, d: 0 } }
+            ]
+        };
+
+        // 애플리케이션 상태 (State)
+        const state = {
+            currentExpr: CONFIG.presets[0].formula,
+            params: { ...CONFIG.presets[0].defaultParams },
+            viewport: {
+                centerX: 0,
+                centerY: 0,
+                xRange: CONFIG.initialXRange
+            },
+            isDragging: false,
+            lastMousePos: { x: 0, y: 0 },
+            hoverCoords: null
+        };
+
+        // DOM 요소 획득
+        const canvas = document.getElementById('graph-canvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        const presetSelect = document.getElementById('preset-select');
+        const customFormulaInput = document.getElementById('custom-formula-input');
+        const btnApplyFormula = document.getElementById('btn-apply-formula');
+        const renderedFormulaEl = document.getElementById('rendered-formula');
+
+        const paramSliders = {
+            a: document.getElementById('param-a'),
+            b: document.getElementById('param-b'),
+            c: document.getElementById('param-c'),
+            d: document.getElementById('param-d')
+        };
+        const paramVals = {
+            a: document.getElementById('param-a-val'),
+            b: document.getElementById('param-b-val'),
+            c: document.getElementById('param-c-val'),
+            d: document.getElementById('param-d-val')
+        };
+
+        const btnResetParams = document.getElementById('btn-reset-params');
+        const btnResetView = document.getElementById('btn-reset-view');
+        const coordsDisplay = document.getElementById('coords-display');
+        const fxDisplay = document.getElementById('fx-display');
+        const valuesTableBody = document.getElementById('values-table-body');
+
+        const sidePanel = document.getElementById('side-panel');
+        const btnTogglePanel = document.getElementById('btn-toggle-panel');
+        const btnClosePanel = document.getElementById('btn-close-panel');
+
+        // 수학식 연산 파서
+        function evaluateMath(expression, xVal, params) {
+            try {
+                let expr = expression
+                    .replace(/\^/g, '**')
+                    .replace(/sqrt/g, 'Math.sqrt')
+                    .replace(/abs/g, 'Math.abs')
+                    .replace(/sin/g, 'Math.sin')
+                    .replace(/cos/g, 'Math.cos')
+                    .replace(/tan/g, 'Math.tan')
+                    .replace(/log/g, 'Math.log10')
+                    .replace(/ln/g, 'Math.log');
+
+                const func = new Function('x', 'a', 'b', 'c', 'd', `return ${expr};`);
+                const res = func(xVal, params.a, params.b, params.c, params.d);
+                return (isNaN(res) || !isFinite(res)) ? null : res;
+            } catch (err) {
+                return null;
+            }
+        }
+
+        function initUI() {
+            presetSelect.innerHTML = CONFIG.presets.map((p, idx) => 
+                `<option value="${idx}">${p.name} [ ${p.formula} ]</option>`
+            ).join('');
+
+            updateParamUI();
+            updateValuesTable();
+            resizeCanvas();
+        }
+
+        function resizeCanvas() {
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            render();
+        }
+
+        function toScreenCoords(x, y) {
+            const aspect = canvas.width / canvas.height;
+            const yRange = state.viewport.xRange / aspect;
+
+            const px = ((x - state.viewport.centerX) / state.viewport.xRange + 0.5) * canvas.width;
+            const py = (0.5 - (y - state.viewport.centerY) / yRange) * canvas.height;
+            return { x: px, y: py };
+        }
+
+        function toMathCoords(px, py) {
+            const aspect = canvas.width / canvas.height;
+            const yRange = state.viewport.xRange / aspect;
+
+            const x = (px / canvas.width - 0.5) * state.viewport.xRange + state.viewport.centerX;
+            const y = (0.5 - py / canvas.height) * yRange + state.viewport.centerY;
+            return { x, y };
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const aspect = canvas.width / canvas.height;
+            const yRange = state.viewport.xRange / aspect;
+
+            const minX = state.viewport.centerX - state.viewport.xRange / 2;
+            const maxX = state.viewport.centerX + state.viewport.xRange / 2;
+            const minY = state.viewport.centerY - yRange / 2;
+            const maxY = state.viewport.centerY + yRange / 2;
+
+            drawGridAndAxes(minX, maxX, minY, maxY);
+            drawGraph(minX, maxX);
+            drawKeyPoints(minX, maxX);
+
+            if (state.hoverCoords) {
+                drawCrosshair(state.hoverCoords);
+            }
+
+            updateFormulaDisplay();
+        }
+
+        function drawGridAndAxes(minX, maxX, minY, maxY) {
+            const rawStep = state.viewport.xRange / 10;
+            const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+            let step = magnitude;
+            if (rawStep / magnitude > 5) step = 5 * magnitude;
+            else if (rawStep / magnitude > 2) step = 2 * magnitude;
+
+            ctx.lineWidth = 1;
+            ctx.font = 'bold 12px "Jua", sans-serif';
+            ctx.fillStyle = CONFIG.colors.axis;
+
+            const startX = Math.floor(minX / step) * step;
+            for (let x = startX; x <= maxX; x += step) {
+                const { x: px } = toScreenCoords(x, 0);
+                ctx.strokeStyle = CONFIG.colors.grid;
+                ctx.beginPath();
+                ctx.moveTo(px, 0);
+                ctx.lineTo(px, canvas.height);
+                ctx.stroke();
+
+                if (Math.abs(x) > 1e-6) {
+                    const { y: pyZero } = toScreenCoords(0, 0);
+                    const clampedY = Math.max(20, Math.min(canvas.height - 10, pyZero + 16));
+                    ctx.fillText(x.toFixed(step < 1 ? 1 : 0), px - 8, clampedY);
+                }
+            }
+
+            const startY = Math.floor(minY / step) * step;
+            for (let y = startY; y <= maxY; y += step) {
+                const { y: py } = toScreenCoords(0, y);
+                ctx.strokeStyle = CONFIG.colors.grid;
+                ctx.beginPath();
+                ctx.moveTo(0, py);
+                ctx.lineTo(canvas.width, py);
+                ctx.stroke();
+
+                if (Math.abs(y) > 1e-6) {
+                    const { x: pxZero } = toScreenCoords(0, 0);
+                    const clampedX = Math.max(10, Math.min(canvas.width - 30, pxZero + 8));
+                    ctx.fillText(y.toFixed(step < 1 ? 1 : 0), clampedX, py + 4);
+                }
+            }
+
+            // X, Y 메인 축 (선명한 3px 차콜 외곽선)
+            const origin = toScreenCoords(0, 0);
+            ctx.strokeStyle = CONFIG.colors.axis;
+            ctx.lineWidth = 3;
+
+            ctx.beginPath();
+            ctx.moveTo(0, origin.y);
+            ctx.lineTo(canvas.width, origin.y);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(origin.x, 0);
+            ctx.lineTo(origin.x, canvas.height);
+            ctx.stroke();
+        }
+
+        function drawGraph(minX, maxX) {
+            ctx.strokeStyle = CONFIG.colors.graph;
+            ctx.lineWidth = 4.5;
+            ctx.beginPath();
+
+            const stepPx = 2;
+            let isDrawing = false;
+
+            for (let px = 0; px <= canvas.width; px += stepPx) {
+                const mathPt = toMathCoords(px, 0);
+                const yVal = evaluateMath(state.currentExpr, mathPt.x, state.params);
+
+                if (yVal !== null) {
+                    const screenPt = toScreenCoords(mathPt.x, yVal);
+                    
+                    if (screenPt.y < -canvas.height || screenPt.y > canvas.height * 2) {
+                        isDrawing = false;
+                    } else {
+                        if (!isDrawing) {
+                            ctx.moveTo(screenPt.x, screenPt.y);
+                            isDrawing = true;
+                        } else {
+                            ctx.lineTo(screenPt.x, screenPt.y);
+                        }
+                    }
+                } else {
+                    isDrawing = false;
+                }
+            }
+            ctx.stroke();
+        }
+
+        function drawKeyPoints(minX, maxX) {
+            const yIntercept = evaluateMath(state.currentExpr, 0, state.params);
+            if (yIntercept !== null) {
+                const pt = toScreenCoords(0, yIntercept);
+                if (pt.x >= 0 && pt.x <= canvas.width && pt.y >= 0 && pt.y <= canvas.height) {
+                    drawPoint(pt.x, pt.y, CONFIG.colors.points);
+                }
+            }
+        }
+
+        function drawPoint(px, py, color) {
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(px, py, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#2b2b2b';
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+        }
+
+        function drawCrosshair(coords) {
+            const pt = toScreenCoords(coords.x, coords.y);
+
+            ctx.strokeStyle = CONFIG.colors.crosshair;
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([4, 4]);
+
+            ctx.beginPath();
+            ctx.moveTo(pt.x, 0);
+            ctx.lineTo(pt.x, canvas.height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, pt.y);
+            ctx.lineTo(canvas.width, pt.y);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+        }
+
+        function updateFormulaDisplay() {
+            let formulaStr = state.currentExpr;
+            renderedFormulaEl.textContent = `y = ${formulaStr}`;
+        }
+
+        function updateParamUI() {
+            for (const key in state.params) {
+                paramSliders[key].value = state.params[key];
+                paramVals[key].textContent = parseFloat(state.params[key]).toFixed(1);
+            }
+        }
+
+        function updateValuesTable() {
+            let html = '';
+            for (let x = -5; x <= 5; x++) {
+                const y = evaluateMath(state.currentExpr, x, state.params);
+                const yStr = y !== null ? (Number.isInteger(y) ? y : y.toFixed(2)) : '정의되지 않음';
+                html += `
+                    <tr class="hover:bg-[var(--lemon)] transition">
+                        <td class="py-1 px-3 text-center font-bold text-[var(--ch)] border-r-2 border-[var(--ch)]">${x}</td>
+                        <td class="py-1 px-3 text-center text-slate-900 font-bold">${yStr}</td>
+                    </tr>
+                `;
+            }
+            valuesTableBody.innerHTML = html;
+        }
+
+        function setupEventListeners() {
+            window.addEventListener('resize', resizeCanvas);
+
+            presetSelect.addEventListener('change', (e) => {
+                const preset = CONFIG.presets[e.target.value];
+                state.currentExpr = preset.formula;
+                state.params = { ...preset.defaultParams };
+                customFormulaInput.value = preset.formula;
+                updateParamUI();
+                updateValuesTable();
+                render();
+            });
+
+            btnApplyFormula.addEventListener('click', () => {
+                const val = customFormulaInput.value.trim();
+                if (val) {
+                    state.currentExpr = val;
+                    updateValuesTable();
+                    render();
+                }
+            });
+
+            ['a', 'b', 'c', 'd'].forEach(p => {
+                paramSliders[p].addEventListener('input', (e) => {
+                    state.params[p] = parseFloat(e.target.value);
+                    paramVals[p].textContent = state.params[p].toFixed(1);
+                    updateValuesTable();
+                    render();
+                });
+            });
+
+            btnResetParams.addEventListener('click', () => {
+                state.params = { a: 1, b: 0, c: 0, d: 0 };
+                updateParamUI();
+                updateValuesTable();
+                render();
+            });
+
+            btnResetView.addEventListener('click', () => {
+                state.viewport.centerX = 0;
+                state.viewport.centerY = 0;
+                state.viewport.xRange = CONFIG.initialXRange;
+                render();
+            });
+
+            container.addEventListener('mousedown', (e) => {
+                state.isDragging = true;
+                state.lastMousePos = { x: e.clientX, y: e.clientY };
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                if (mouseX >= 0 && mouseX <= canvas.width && mouseY >= 0 && mouseY <= canvas.height) {
+                    const mathPt = toMathCoords(mouseX, mouseY);
+                    state.hoverCoords = mathPt;
+                    coordsDisplay.textContent = `(${mathPt.x.toFixed(2)}, ${mathPt.y.toFixed(2)})`;
+                    
+                    const fxVal = evaluateMath(state.currentExpr, mathPt.x, state.params);
+                    fxDisplay.textContent = fxVal !== null ? fxVal.toFixed(2) : '정의되지 않음';
+                } else {
+                    state.hoverCoords = null;
+                }
+
+                if (state.isDragging) {
+                    const dx = e.clientX - state.lastMousePos.x;
+                    const dy = e.clientY - state.lastMousePos.y;
+
+                    const aspect = canvas.width / canvas.height;
+                    const yRange = state.viewport.xRange / aspect;
+
+                    state.viewport.centerX -= (dx / canvas.width) * state.viewport.xRange;
+                    state.viewport.centerY += (dy / canvas.height) * yRange;
+
+                    state.lastMousePos = { x: e.clientX, y: e.clientY };
+                }
+                render();
+            });
+
+            window.addEventListener('mouseup', () => {
+                state.isDragging = false;
+            });
+
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
+                state.viewport.xRange *= zoomFactor;
+                state.viewport.xRange = Math.max(2, Math.min(200, state.viewport.xRange));
+                render();
+            }, { passive: false });
+
+            container.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 1) {
+                    state.isDragging = true;
+                    state.lastMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                }
+            });
+
+            container.addEventListener('touchmove', (e) => {
+                if (state.isDragging && e.touches.length === 1) {
+                    const dx = e.touches[0].clientX - state.lastMousePos.x;
+                    const dy = e.touches[0].clientY - state.lastMousePos.y;
+
+                    const aspect = canvas.width / canvas.height;
+                    const yRange = state.viewport.xRange / aspect;
+
+                    state.viewport.centerX -= (dx / canvas.width) * state.viewport.xRange;
+                    state.viewport.centerY += (dy / canvas.height) * yRange;
+
+                    state.lastMousePos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+                    render();
+                }
+            });
+
+            container.addEventListener('touchend', () => {
+                state.isDragging = false;
+            });
+
+            btnTogglePanel.addEventListener('click', () => {
+                sidePanel.classList.remove('translate-x-full');
+            });
+            btnClosePanel.addEventListener('click', () => {
+                sidePanel.classList.add('translate-x-full');
+            });
+        }
+
+        window.onload = function() {
+            initUI();
+            setupEventListeners();
+        };
+    </script>
+</body>
+</html>
